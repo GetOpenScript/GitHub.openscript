@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Display Repo Size for GitHub
-// @version      1.1.0
+// @version      1.2.0
 // @description  Displays repository size inside the About section on GitHub (supports public & private repos using GH_PAT).
 // @author       OpenScript
 // @match        https://github.com/*/*
@@ -21,36 +21,50 @@
     return `${(kb / (1024 * 1024)).toFixed(2)} GB`;
   };
 
-  // Extract owner & repo
+  // Extract owner & repo from URL
   const getRepoInfo = () => {
     const [, owner, repo] = location.pathname.split('/');
-    const reserved = new Set(['settings', 'orgs', 'organizations', 'notifications', 'search', 'features', 'pricing', 'explore', 'marketplace']);
+    const reserved = new Set([
+      'settings', 'orgs', 'organizations', 'notifications', 'search',
+      'features', 'pricing', 'explore', 'marketplace', 'topics', 'trending'
+    ]);
     return (owner && repo && !reserved.has(owner)) ? { owner, repo } : null;
   };
 
   // Safely retrieve GH_PAT from OpenScript environment
   const getPat = () => {
-    const secrets = (typeof OpenScript !== 'undefined' ? OpenScript?.env : null) ||
-                    (typeof env !== 'undefined' ? env : null) ||
-                    window.OpenScript?.env ||
-                    window.env ||
-                    {};
-    return secrets.GH_PAT || secrets.gh_pat || secrets.GITHUB_PAT || secrets.GITHUB_TOKEN || null;
+    try {
+      const envObj = (typeof OpenScript !== 'undefined' && OpenScript?.env) ||
+                     (typeof env !== 'undefined' && env) ||
+                     window.OpenScript?.env ||
+                     window.env ||
+                     {};
+      for (const [k, v] of Object.entries(envObj)) {
+        if (/^(GH_PAT|GITHUB_PAT|GITHUB_TOKEN|PAT)$/i.test(k) && v) return String(v).trim();
+      }
+      if (typeof GM_getValue === 'function') {
+        const gm = GM_getValue('GH_PAT') || GM_getValue('gh_pat');
+        if (gm) return String(gm).trim();
+      }
+    } catch {
+      // ignore
+    }
+    return null;
   };
 
-  // Fetch repository size from GitHub API (with fallback to recursive Git Trees API when size is 0)
+  // Fetch repository size from GitHub API (fallback to Git Trees when size is 0)
   const fetchRepoSize = async (owner, repo) => {
     const key = `${owner}/${repo}`;
     if (cache.has(key)) return cache.get(key);
 
     const pat = getPat();
     const headers = { Accept: 'application/vnd.github.v3+json' };
-    if (pat) headers.Authorization = `Bearer ${pat.trim()}`;
+    if (pat) headers.Authorization = `Bearer ${pat}`;
 
     try {
       const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
       if (!res.ok) {
-        if (res.status === 404) return pat ? 'repo not found' : 'private (set GH_PAT)';
+        if (res.status === 404) return pat ? 'repo not found' : 'private (missing GH_PAT)';
         if (res.status === 401) return 'invalid GH_PAT';
         return `API error (${res.status})`;
       }
@@ -76,31 +90,26 @@
     }
   };
 
-  // Find the GitHub "About" section in sidebar
-  const findAboutContainer = () => {
-    // Priority 1: First BorderGrid-cell containing About header or in right sidebar
-    const cells = document.querySelectorAll('.Layout-sidebar .BorderGrid-cell, .BorderGrid-cell');
-    for (const cell of cells) {
-      const h2 = cell.querySelector('h2');
-      if (h2 && /About/i.test(h2.textContent)) return cell;
+  // Locate the GitHub "About" heading (works on React and classic GitHub pages)
+  const findAboutHeading = () => {
+    for (const h of document.querySelectorAll('h2')) {
+      if (/^\s*About\s*$/i.test(h.textContent.trim())) return h;
     }
-
-    // Priority 2: Standard first cell in sidebar
-    return document.querySelector('.Layout-sidebar .BorderGrid-row:first-child .BorderGrid-cell') ||
-           document.querySelector('[data-testid="about-section"]') ||
-           document.querySelector('.Layout-sidebar section');
+    return null;
   };
 
-  // Render or update the size element inside the About section
+  // Insert or update size row in About section
   const updateAboutSize = async () => {
     const info = getRepoInfo();
     if (!info) return;
 
-    // Clean up any old top badge if present
+    // Clean up any legacy badges
     document.getElementById('openscript-repo-size')?.remove();
 
-    const container = findAboutContainer();
-    if (!container || document.getElementById(ROW_ID)) return;
+    if (document.getElementById(ROW_ID)) return;
+
+    const heading = findAboutHeading();
+    if (!heading) return;
 
     const row = document.createElement('div');
     row.id = ROW_ID;
@@ -112,25 +121,29 @@
       <span><strong class="size-val color-fg-default font-semibold">calculating...</strong> repo size</span>
     `;
 
-    // Insert after description / before bottom stats
-    const heading = container.querySelector('h2');
-    if (heading && heading.nextElementSibling) {
-      heading.parentNode.insertBefore(row, heading.nextElementSibling.nextElementSibling || heading.nextElementSibling);
-    } else {
-      container.appendChild(row);
-    }
+    // Place directly after description / about heading
+    const sibling = heading.nextElementSibling;
+    if (sibling) sibling.insertAdjacentElement('afterend', row);
+    else heading.insertAdjacentElement('afterend', row);
 
     const size = await fetchRepoSize(info.owner, info.repo);
     const valEl = row.querySelector('.size-val');
     if (valEl) valEl.textContent = size;
   };
 
-  // Listen to GitHub SPA navigation events
+  // Navigation handlers & periodic check during dynamic React sidebar hydration
+  const run = () => {
+    document.getElementById(ROW_ID)?.remove();
+    updateAboutSize();
+    let count = 0;
+    const timer = setInterval(() => {
+      if (document.getElementById(ROW_ID) || ++count > 10) clearInterval(timer);
+      else updateAboutSize();
+    }, 250);
+  };
+
   ['turbo:load', 'turbo:render', 'pjax:end', 'popstate'].forEach(ev =>
-    window.addEventListener(ev, () => {
-      document.getElementById(ROW_ID)?.remove();
-      updateAboutSize();
-    })
+    window.addEventListener(ev, run)
   );
 
   const observer = new MutationObserver(() => {
@@ -138,5 +151,5 @@
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
-  updateAboutSize();
+  run();
 })();
