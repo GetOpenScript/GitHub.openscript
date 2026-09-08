@@ -1,24 +1,23 @@
 # Display Repo Size for GitHub (OpenScript Userscript)
 
-A lightweight OpenScript userscript that displays the total repository size directly on GitHub repository pages (for both public and private repositories).
+A lightweight OpenScript userscript that displays the total repository size directly in the **About** section on GitHub repository pages (for both public and private repositories).
 
 ## Features
-- Displays total repo size (formatted in KB, MB, or GB) next to the file navigation header.
-- Works seamlessly on public and private repositories.
-- Integrates with OpenScript's synced secrets: uses `GH_PAT` (GitHub Personal Access Token) to authenticate API requests, unlock private repo access, and elevate the rate limit from 60 to 5,000 req/hr.
-- Supports GitHub's Turbo and SPA client-side navigations.
+- **Integrated in About Section**: Injects cleanly under repository details in the right sidebar (e.g. `📦 673.9 KB repo size`).
+- **Accurate Size Detection**: Automatically detects when GitHub's API returns `0 KB` on newly created repositories and falls back to calculating the total content size via the Git Trees API.
+- **Private & Public Repositories**: Works on public repositories out-of-the-box and uses `GH_PAT` from OpenScript secrets for private repositories.
+- **Turbo / SPA Compatible**: Seamlessly persists across GitHub's Turbo and client-side page transitions.
 
 ## Installation in OpenScript
 1. Open the **OpenScript** extension popup.
 2. Click **+ New** in the header.
-3. Copy and paste the code from [`DisplayRepoSizeGitHub.user.js`](./DisplayRepoSizeGitHub.user.js) into the editor.
+3. Paste the contents of [`DisplayRepoSizeGitHub.user.js`](./DisplayRepoSizeGitHub.user.js).
 4. Click **save script**.
 
-## Private Repos & GitHub PAT Configuration
-To view the size of private repositories:
+## GitHub PAT Configuration (for Private Repos)
 1. Generate a GitHub Personal Access Token (`repo` scope for private repos) at [github.com/settings/tokens](https://github.com/settings/tokens).
 2. Open **OpenScript** and switch to the **Secrets** tab.
-3. Add a secret with:
+3. Add a secret:
    - **Key**: `GH_PAT`
-   - **Value**: `<your_personal_access_token>`
-4. Click **+ Add**. The secret will sync across your devices via `chrome.storage.sync` and will be automatically available to the script.
+   - **Value**: `<your_token>`
+4. Click **+ Add**. OpenScript synchronizes the secret via `chrome.storage.sync` and securely provides it to your script as `OpenScript.env.GH_PAT`.
