@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Display Repo Size for GitHub
-// @version      1.2.0
-// @description  Displays repository size inside the About section on GitHub (supports public & private repos using GH_PAT).
+// @version      1.3.0
+// @description  Displays total repository size (including full git history) inside the About section on GitHub using GH_PAT.
 // @author       OpenScript
 // @match        https://github.com/*/*
 // @grant        none
@@ -13,15 +13,15 @@
   const cache = new Map();
   const ROW_ID = 'openscript-repo-size-about';
 
-  // Format bytes to human readable format
-  const formatSize = bytes => {
-    const kb = bytes / 1024;
-    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  // Format KB to readable size
+  const formatKb = kb => {
+    if (kb <= 0) return '0 KB (calculating...)';
+    if (kb < 1024) return `${kb} KB`;
     if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(1)} MB`;
     return `${(kb / (1024 * 1024)).toFixed(2)} GB`;
   };
 
-  // Extract owner & repo from URL
+  // Extract owner & repo from path
   const getRepoInfo = () => {
     const [, owner, repo] = location.pathname.split('/');
     const reserved = new Set([
@@ -52,7 +52,7 @@
     return null;
   };
 
-  // Fetch repository size from GitHub API (fallback to Git Trees when size is 0)
+  // Fetch full repository size from GitHub API (no blobs API fallback)
   const fetchRepoSize = async (owner, repo) => {
     const key = `${owner}/${repo}`;
     if (cache.has(key)) return cache.get(key);
@@ -64,29 +64,26 @@
     try {
       const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
       if (!res.ok) {
-        if (res.status === 404) return pat ? 'repo not found' : 'private (missing GH_PAT)';
-        if (res.status === 401) return 'invalid GH_PAT';
-        return `API error (${res.status})`;
+        if (res.status === 404) return { text: 'private (missing GH_PAT)', title: 'Set GH_PAT secret in OpenScript for private repository access' };
+        if (res.status === 401) return { text: 'invalid GH_PAT', title: 'GH_PAT token was rejected by GitHub API' };
+        return { text: `API error (${res.status})`, title: `GitHub API returned ${res.status}` };
       }
 
       const data = await res.json();
-      let bytes = (data.size || 0) * 1024;
+      const kb = data.size ?? 0;
+      const isZero = kb === 0;
 
-      // GitHub async calculation fallback: if size is 0, sum blob sizes via Git Trees API
-      if (bytes <= 0) {
-        const branch = data.default_branch || 'main';
-        const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, { headers });
-        if (treeRes.ok) {
-          const treeData = await treeRes.json();
-          bytes = (treeData.tree || []).reduce((acc, item) => acc + (item.size || 0), 0);
-        }
-      }
+      const result = {
+        text: formatKb(kb),
+        title: isZero
+          ? 'GitHub is still calculating disk usage for this new/recent repo. Check back in a few minutes.'
+          : `Total repository disk usage (including full git history): ${kb.toLocaleString()} KB`
+      };
 
-      const formatted = formatSize(bytes);
-      cache.set(key, formatted);
-      return formatted;
+      if (!isZero) cache.set(key, result);
+      return result;
     } catch {
-      return 'failed to load';
+      return { text: 'failed to load', title: 'Network or fetch error' };
     }
   };
 
@@ -126,9 +123,12 @@
     if (sibling) sibling.insertAdjacentElement('afterend', row);
     else heading.insertAdjacentElement('afterend', row);
 
-    const size = await fetchRepoSize(info.owner, info.repo);
+    const sizeInfo = await fetchRepoSize(info.owner, info.repo);
     const valEl = row.querySelector('.size-val');
-    if (valEl) valEl.textContent = size;
+    if (valEl) {
+      valEl.textContent = sizeInfo.text;
+      if (sizeInfo.title) row.setAttribute('title', sizeInfo.title);
+    }
   };
 
   // Navigation handlers & periodic check during dynamic React sidebar hydration

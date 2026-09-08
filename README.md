@@ -1,16 +1,17 @@
 # Display Repo Size for GitHub (OpenScript Userscript)
 
-A lightweight OpenScript userscript that displays the total repository size directly in the **About** section on GitHub repository pages (for both public and private repositories).
+A lightweight OpenScript userscript that displays the total repository size (including all commit history, branches, tags, and packfiles) directly in the **About** section on GitHub repository pages (for both public and private repositories).
 
 ## Features
-- **Integrated in About Section**: Injects cleanly under repository details in the right sidebar (e.g. `📦 673.9 KB repo size`).
-- **Accurate Size Detection**: Automatically detects when GitHub's API returns `0 KB` on newly created repositories and falls back to calculating the total content size via the Git Trees API.
-- **Private & Public Repositories**: Works on public repositories out-of-the-box and uses `GH_PAT` from OpenScript secrets for private repositories.
+- **Accurate Git History Size**: Uses GitHub's native `repo.size` disk usage measurement, accurately reflecting the full Git history, delta compression, and packfiles rather than loose blobs.
+- **New Repo Handling**: If a repository was just pushed and GitHub is still computing initial disk usage (`0 KB`), it provides a friendly indicator (`0 KB (calculating...)`) until GitHub finishes indexing.
+- **Integrated in About Section**: Injects cleanly under repository details in the right sidebar.
+- **Private Repositories Supported**: Uses `GH_PAT` from OpenScript secrets for private repositories and increased rate limits.
 - **Turbo / SPA Compatible**: Seamlessly persists across GitHub's Turbo and client-side page transitions.
 
 ## Installation in OpenScript
 1. Open the **OpenScript** extension popup.
-2. Click **+ New** in the header.
+2. Click **+ New** in the header (or click your existing script to edit).
 3. Paste the contents of [`DisplayRepoSizeGitHub.user.js`](./DisplayRepoSizeGitHub.user.js).
 4. Click **save script**.
 
