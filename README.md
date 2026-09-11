@@ -1,13 +1,16 @@
-# Display Repo Size for GitHub (OpenScript Userscript)
+# Display Repo and File Sizes for GitHub
 
-A lightweight OpenScript userscript that displays the total repository size (including all commit history, branches, tags, and packfiles) directly in the **About** section on GitHub repository pages (for both public and private repositories).
+A lightweight OpenScript that displays total repository disk usage in the **About** section and each file's size beside its name in GitHub's file browser.
 
 ## Features
 - **Accurate Git History Size**: Uses GitHub's native `repo.size` disk usage measurement, accurately reflecting the full Git history, delta compression, and packfiles rather than loose blobs.
 - **New Repo Handling**: If a repository was just pushed and GitHub is still computing initial disk usage (`0 KB`), it provides a friendly indicator (`0 KB (calculating...)`) until GitHub finishes indexing.
 - **Integrated in About Section**: Injects cleanly under repository details in the right sidebar.
+- **Individual File Sizes**: Shows human-readable byte sizes beside files in root and nested directory listings.
+- **GitHub-Native Layout**: Targets only responsive filename cells, leaving commit messages, dates, links, and directory rows untouched.
 - **Private Repositories Supported**: Uses `GH_PAT` from OpenScript secrets for private repositories and increased rate limits.
 - **Turbo / SPA Compatible**: Seamlessly persists across GitHub's Turbo and client-side page transitions.
+- **No Cache or Script Storage**: Reads fresh repository and directory data from GitHub's API for each rendered view.
 
 ## Installation in OpenScript
 1. Open the **OpenScript** extension popup.
