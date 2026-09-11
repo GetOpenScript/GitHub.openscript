@@ -1,6 +1,6 @@
 # GitHub OpenScripts
 
-Small, independent [OpenScript](https://github.com/GetOpenScript/OpenScript) enhancements for GitHub. Install either script or both.
+Small, independent [OpenScript](https://github.com/GetOpenScript/OpenScript) enhancements for GitHub. Install any combination of scripts.
 
 ## Scripts
 
@@ -30,6 +30,18 @@ This script requests repository metadata when the **About** section is rendered 
 - Handles GitHub SPA navigation and branch names containing slashes.
 
 OpenScript downloads and caches the declared JSZip `@require` when the script is saved. It is not downloaded again on every GitHub page.
+
+### Meaningful Icons for GitHub
+
+[`meaningful-icons.os.js`](./meaningful-icons.os.js) replaces GitHub's generic file and folder glyphs with type-aware Material icons.
+
+- Recognizes file names, compound extensions, folders, submodules, symlinks, and GitHub Actions workflows.
+- Works in repository listings, the file tree, and release download lists.
+- Handles GitHub SPA navigation, expanded folders, and light/dark theme changes.
+- Uses a vendored copy of the same MIT-licensed Material Icon Theme data and SVG assets as the credited Material Icons for GitHub extension.
+- Downloads only the icons a page needs from this repository, falls back to the pinned npm package, then caches them in per-script OpenScript storage.
+
+No asset folder or manual icon download is needed when installing the script. Its vendored assets live in [`vendor/material-icon-theme-5.38.1`](./vendor/material-icon-theme-5.38.1) and are loaded from `raw.githubusercontent.com`; `cdn.jsdelivr.net` is a redundant fallback. Previously cached icons remain available if both hosts are temporarily unreachable. The script and vendor directory contain the upstream copyright notices, licenses, credits, and third-party licensing references.
 
 ## Installation
 
