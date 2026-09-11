@@ -1,9 +1,10 @@
-# Display Repo and File Sizes for GitHub
+# Display Repo Info and File Sizes for GitHub
 
-A lightweight OpenScript that displays total repository disk usage in the **About** section and each file's size beside its name in GitHub's file browser.
+A lightweight OpenScript that displays total repository disk usage and age in the **About** section and each file's size beside its name in GitHub's file browser.
 
 ## Features
 - **Accurate Git History Size**: Uses GitHub's native `repo.size` disk usage measurement, accurately reflecting the full Git history, delta compression, and packfiles rather than loose blobs.
+- **Repository Age & Creation Timestamp**: Shows repository age in the About sidebar and displays the exact creation date and time with timezone on hover.
 - **New Repo Handling**: If a repository was just pushed and GitHub is still computing initial disk usage (`0 KB`), it provides a friendly indicator (`0 KB (calculating...)`) until GitHub finishes indexing.
 - **Integrated in About Section**: Injects cleanly under repository details in the right sidebar.
 - **Individual File Sizes**: Shows human-readable byte sizes beside files in root and nested directory listings.
@@ -15,7 +16,7 @@ A lightweight OpenScript that displays total repository disk usage in the **Abou
 ## Installation in OpenScript
 1. Open the **OpenScript** extension popup.
 2. Click **+ New** in the header (or click your existing script to edit).
-3. Paste the contents of [`DisplayRepoSizeGitHub.user.js`](./DisplayRepoSizeGitHub.user.js).
+3. Paste the contents of [`DisplayRepoInfo.os.js`](./DisplayRepoInfo.os.js).
 4. Click **save script**.
 
 ## GitHub PAT Configuration (for Private Repos)
