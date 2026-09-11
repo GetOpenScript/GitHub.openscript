@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name         Display Repo Info and File Sizes for GitHub
+// @version      1.0.0
 // @description  Displays repository disk usage, age, and individual file sizes on GitHub.
 // @match        https://github.com/*/*
 // ==/UserScript==

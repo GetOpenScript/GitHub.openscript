@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name         Download GitHub Directory
+// @version      1.0.0
 // @description  Adds a rate-limit-friendly directory download option to GitHub.
 // @match        https://github.com/*/*
 // @require      https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js

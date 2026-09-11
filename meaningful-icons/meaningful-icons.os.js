@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name         Meaningful Icons for GitHub
+// @version      1.0.0
 // @description  Replaces GitHub's generic file and folder icons with type-aware Material icons.
 // @match        https://github.com/*/*
 // ==/UserScript==
