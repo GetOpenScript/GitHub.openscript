@@ -45,7 +45,7 @@ https://developers.google.com/fonts/docs/material_icons#licensing
 
 const VERSION = '5.38.1';
 const SOURCES = [
-  `https://raw.githubusercontent.com/GetOpenScript/GitHub.openscript/main/vendor/material-icon-theme-${VERSION}`,
+  'https://raw.githubusercontent.com/GetOpenScript/GitHub.openscript/main/meaningful-icons',
   `https://cdn.jsdelivr.net/npm/material-icon-theme@${VERSION}`,
 ];
 const MARK = 'data-openscript-meaningful-icon';

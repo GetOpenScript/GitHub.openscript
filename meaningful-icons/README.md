@@ -1,6 +1,6 @@
-# Material Icon Theme 5.38.1
+# Meaningful Icons for GitHub
 
-This directory vendors the icon manifest and SVG assets from the [`material-icon-theme` 5.38.1 npm package](https://www.npmjs.com/package/material-icon-theme/v/5.38.1). It lets `meaningful-icons.os.js` load pinned assets from the GetOpenScript repository instead of depending solely on a third-party CDN.
+This directory keeps [`meaningful-icons.os.js`](./meaningful-icons.os.js) and all of its resources together. It vendors the icon manifest and SVG assets from the [`material-icon-theme` 5.38.1 npm package](https://www.npmjs.com/package/material-icon-theme/v/5.38.1), which was the npm `latest` release when updated on September 11, 2026. The local copy lets the script load pinned assets from the GetOpenScript repository instead of depending solely on a third-party CDN.
 
 Upstream project: <https://github.com/material-extensions/vscode-material-icon-theme>
 
