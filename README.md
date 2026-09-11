@@ -1,28 +1,55 @@
-# Display Repo Info and File Sizes for GitHub
+# GitHub OpenScripts
 
-A lightweight OpenScript that displays total repository disk usage and age in the **About** section and each file's size beside its name in GitHub's file browser.
+Small, independent [OpenScript](https://github.com/GetOpenScript/OpenScript) enhancements for GitHub. Install either script or both.
 
-## Features
-- **Accurate Git History Size**: Uses GitHub's native `repo.size` disk usage measurement, accurately reflecting the full Git history, delta compression, and packfiles rather than loose blobs.
-- **Repository Age & Creation Timestamp**: Shows repository age in the About sidebar and displays the exact creation date and time with timezone on hover.
-- **New Repo Handling**: If a repository was just pushed and GitHub is still computing initial disk usage (`0 KB`), it provides a friendly indicator (`0 KB (calculating...)`) until GitHub finishes indexing.
-- **Integrated in About Section**: Injects cleanly under repository details in the right sidebar.
-- **Individual File Sizes**: Shows human-readable byte sizes beside files in root and nested directory listings.
-- **GitHub-Native Layout**: Targets only responsive filename cells, leaving commit messages, dates, links, and directory rows untouched.
-- **Private Repositories Supported**: Uses `GH_PAT` from OpenScript secrets for private repositories and increased rate limits.
-- **Turbo / SPA Compatible**: Seamlessly persists across GitHub's Turbo and client-side page transitions.
-- **No Cache or Script Storage**: Reads fresh repository and directory data from GitHub's API for each rendered view.
+## Scripts
 
-## Installation in OpenScript
+### Display Repo Info and File Sizes
+
+[`DisplayRepoInfo.os.js`](./DisplayRepoInfo.os.js) adds repository information and file sizes directly to GitHub's interface.
+
+- Shows total repository disk usage and repository age in the **About** sidebar.
+- Shows the exact repository creation date and time on hover.
+- Adds human-readable sizes beside files in root and nested directory listings.
+- Handles GitHub SPA navigation without requiring a page refresh.
+- Uses GitHub-native layout, colors, and responsive filename cells.
+- Supports private repositories through an optional `GH_PAT` secret.
+
+This script requests repository metadata when the **About** section is rendered and directory contents when a GitHub file listing is rendered. It guards in-progress directory requests to avoid duplicate API calls during DOM updates.
+
+### Download GitHub Directory
+
+[`DownloadDir.os.js`](./DownloadDir.os.js) adds **Download directory** to the three-dot menu on GitHub directory pages.
+
+- Makes no GitHub requests on page load, navigation, or menu opening.
+- Starts all download-related requests only after **Download directory** is clicked.
+- Uses one recursive Git Trees API request for a normal public repository, then retrieves file bytes from `raw.githubusercontent.com` without spending additional REST API quota.
+- Falls back to additional tree requests only when GitHub truncates an unusually large recursive tree response.
+- Downloads private repository files through authenticated Git blob requests.
+- Builds the ZIP locally in the browser with JSZip and preserves the selected directory as its root folder.
+- Handles GitHub SPA navigation and branch names containing slashes.
+
+OpenScript downloads and caches the declared JSZip `@require` when the script is saved. It is not downloaded again on every GitHub page.
+
+## Installation
+
+Each file is a separate OpenScript:
+
 1. Open the **OpenScript** extension popup.
-2. Click **+ New** in the header (or click your existing script to edit).
-3. Paste the contents of [`DisplayRepoInfo.os.js`](./DisplayRepoInfo.os.js).
+2. Click **+ New**.
+3. Paste the contents of the script you want to install.
 4. Click **save script**.
+5. Repeat for the other script if you want both features.
 
-## GitHub PAT Configuration (for Private Repos)
-1. Generate a GitHub Personal Access Token (`repo` scope for private repos) at [github.com/settings/tokens](https://github.com/settings/tokens).
-2. Open **OpenScript** and switch to the **Secrets** tab.
-3. Add a secret:
-   - **Key**: `GH_PAT`
-   - **Value**: `<your_token>`
-4. Click **+ Add**. OpenScript synchronizes the secret via `chrome.storage.sync` and securely provides it to your script as `OpenScript.env.GH_PAT`.
+After updating an installed script, save it again and refresh the current GitHub page once. Later GitHub navigation works without refreshing.
+
+## Private Repositories
+
+Both scripts support a GitHub personal access token stored in OpenScript:
+
+1. Create a GitHub token with read access to the required private repositories.
+2. Open OpenScript and select the **Secrets** tab.
+3. Add `GH_PAT` as the key and the token as its value.
+4. Click **+ Add**, then re-save the scripts.
+
+The scripts also recognize `GITHUB_PAT`, `GITHUB_TOKEN`, and `PAT`. Tokens are sent only to `api.github.com` and are never included in generated ZIP files.

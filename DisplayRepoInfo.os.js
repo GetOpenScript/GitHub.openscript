@@ -7,6 +7,7 @@
 const ROW_ID = 'openscript-repo-info-about';
 const SIZE_CLASS = 'openscript-file-size';
 const TABLE_SELECTOR = 'table[aria-labelledby="folders-and-files"]';
+const SIZE_LOADS = new WeakMap();
 
 const formatBytes = b => {
   const u = ['B', 'KB', 'MB', 'GB'];
@@ -74,16 +75,27 @@ const fetchRepoInfo = async ({ owner, repo }) => {
   }
 };
 
+const decode = value => {
+  try { return decodeURIComponent(value); }
+  catch { return value; }
+};
+
+const getRefPath = () => {
+  const ref = document.querySelector('#ref-picker-repos-header-ref-selector')?.textContent.trim();
+  if (!ref) return null;
+  const parts = location.pathname.split('/').slice(1).map(decode);
+  if (parts[2] !== 'tree') return { ref, path: '' };
+  const tail = parts.slice(3).join('/');
+  if (tail !== ref && !tail.startsWith(`${ref}/`)) return null;
+  return { ref, path: tail.slice(ref.length).replace(/^\/+/, '') };
+};
+
 const getCodeView = () => {
   try {
-    const app = document.querySelector('react-app[app-name="code-view"]');
-    const data = JSON.parse(app?.querySelector('script[type="application/json"]')?.textContent || '{}');
-    const route = data.payload?.codeViewRepoRoute || data.payload?.codeViewTreeRoute;
     const info = getRepoInfo();
-    if (!info || !route?.tree?.items || !route.refInfo) return null;
-    const path = String(route.path || '').replace(/^\/+|\/+$/g, '');
-    const ref = route.refInfo.currentOid || route.refInfo.name;
-    return { ...info, path, ref, items: route.tree.items, key: `${info.owner}/${info.repo}:${ref}:${path}` };
+    const current = getRefPath();
+    if (!info || !current) return null;
+    return { ...info, ...current, key: `${info.owner}/${info.repo}:${current.ref}:${current.path}` };
   } catch {
     return null;
   }
@@ -167,11 +179,13 @@ const updateFileSizes = async () => {
   if (!view || !table) return;
 
   const links = table.querySelectorAll('td[class*="react-directory-row-name-cell"] a.Link--primary[href*="/blob/"]');
-  if (table.dataset.openscriptFileSizes === view.key && table.querySelectorAll(`.${SIZE_CLASS}`).length === links.length) return;
+  if (table.dataset.openscriptFileSizes === view.key &&
+      (table.querySelectorAll(`.${SIZE_CLASS}`).length === links.length || SIZE_LOADS.get(table) === view.key)) return;
 
   if (table.dataset.openscriptFileSizes !== view.key)
     table.querySelectorAll(`.${SIZE_CLASS}`).forEach(el => el.remove());
   table.dataset.openscriptFileSizes = view.key;
+  SIZE_LOADS.set(table, view.key);
 
   const path = view.path ? `/${view.path.split('/').map(encodeURIComponent).join('/')}` : '';
   try {
@@ -183,15 +197,17 @@ const updateFileSizes = async () => {
     const entries = await res.json();
     if (!Array.isArray(entries) || getCodeView()?.key !== view.key || !table.isConnected) return;
 
-    const sizes = Object.fromEntries(entries.map(i => [i.path, i.size]));
-    const paths = Object.fromEntries(view.items.filter(i => i.contentType === 'file').map(i => [i.name, i.path]));
+    const sizes = Object.fromEntries(entries.map(item => [item.name, item.size]));
 
     for (const row of table.querySelectorAll('tbody tr')) {
       const link = row.querySelector('td[class*="react-directory-row-name-cell"] a.Link--primary[href*="/blob/"]');
-      const bytes = sizes[paths[link?.title]];
+      const bytes = sizes[link?.title];
       if (Number.isFinite(bytes)) addFileSize(row, link.title, bytes);
     }
   } catch {}
+  finally {
+    if (SIZE_LOADS.get(table) === view.key) SIZE_LOADS.delete(table);
+  }
 };
 
 let scheduled;
@@ -208,9 +224,9 @@ const run = () => {
 );
 
 const start = () => {
-  new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(run).observe(document.documentElement, { childList: true, subtree: true });
   run();
 };
 
-if (document.body) start();
+if (document.documentElement) start();
 else window.addEventListener('DOMContentLoaded', start, { once: true });
