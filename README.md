@@ -6,11 +6,13 @@ Small, independent [OpenScript](https://github.com/GetOpenScript/OpenScript) enh
 
 ### Display Repo Info and File Sizes
 
-[`DisplayRepoInfo.os.js`](./DisplayRepoInfo.os.js) adds repository information and file sizes directly to GitHub's interface.
+[`DisplayRepoInfo.os.js`](./DisplayRepoInfo.os.js) adds repository information, file sizes, and recent-commit highlighting directly to GitHub's interface.
 
 - Shows total repository disk usage and repository age in the **About** sidebar.
 - Shows the exact repository creation date and time on hover.
 - Adds human-readable sizes beside files in root and nested directory listings.
+- Highlights commit dates from the past 30 days with GitHub's theme-aware orange.
+- Groups repository size and age with cleaner spacing before topic tags.
 - Handles GitHub SPA navigation without requiring a page refresh.
 - Uses GitHub-native layout, colors, and responsive filename cells.
 - Supports private repositories through an optional `GH_PAT` secret.
