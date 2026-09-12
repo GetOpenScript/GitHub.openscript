@@ -1,14 +1,35 @@
 // ==UserScript==
 // @name         Display Repo Info and File Sizes for GitHub
-// @version      1.0.0
+// @version      1.1.0
 // @description  Displays repository disk usage, age, and individual file sizes on GitHub.
 // @match        https://github.com/*/*
 // ==/UserScript==
 
 const ROW_ID = 'openscript-repo-info-about';
+const STYLE_ID = 'openscript-repo-info-style';
 const SIZE_CLASS = 'openscript-file-size';
+const RECENT_CLASS = 'openscript-recent-commit';
 const TABLE_SELECTOR = 'table[aria-labelledby="folders-and-files"]';
+const RECENT_MS = 30 * 864e5;
 const SIZE_LOADS = new WeakMap();
+
+const ensureStyles = () => {
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    #${ROW_ID} {
+      display: grid;
+      gap: var(--base-size-8, 8px);
+      margin: var(--base-size-12, 12px) 0 var(--base-size-16, 16px);
+    }
+    #${ROW_ID} > div { min-height: 20px; }
+    .${RECENT_CLASS} {
+      color: var(--fgColor-severe, var(--color-severe-fg, #bc4c00)) !important;
+    }
+  `;
+  document.head.append(style);
+};
 
 const formatBytes = b => {
   const u = ['B', 'KB', 'MB', 'GB'];
@@ -125,13 +146,13 @@ const updateAboutInfo = async () => {
   container.id = ROW_ID;
   container.dataset.repo = key;
   container.innerHTML = `
-    <div class="openscript-size-row mt-2 text-small color-fg-muted d-flex flex-items-center">
+    <div class="openscript-size-row text-small color-fg-muted d-flex flex-items-center">
       <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" class="octicon octicon-database mr-2 color-fg-muted" fill="currentColor">
         <path d="M1 3.5c0-.83.67-1.5 1.5-1.5h11c.83 0 1.5.67 1.5 1.5v9c0 .83-.67 1.5-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9Zm1.5-.5a.5.5 0 0 0-.5.5V5h12V3.5a.5.5 0 0 0-.5-.5h-11ZM14 6H2v2h12V6Zm0 3H2v3.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V9Z"></path>
       </svg>
       <span><strong class="size-val color-fg-default font-semibold">calculating...</strong> repo size</span>
     </div>
-    <div class="openscript-age-row mt-2 text-small color-fg-muted d-flex flex-items-center">
+    <div class="openscript-age-row text-small color-fg-muted d-flex flex-items-center">
       <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" class="octicon octicon-history mr-2 color-fg-muted" fill="currentColor">
         <path d="m.427 1.927 1.215 1.215a8.002 8.002 0 1 1-1.6 5.685.75.75 0 1 1 1.493-.154 6.5 6.5 0 1 0 1.18-4.458l1.358 1.358A.25.25 0 0 1 3.896 6H.25A.25.25 0 0 1 0 5.75V2.104a.25.25 0 0 1 .427-.177ZM7.75 4a.75.75 0 0 1 .75.75v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5A.75.75 0 0 1 7.75 4Z"></path>
       </svg>
@@ -211,12 +232,21 @@ const updateFileSizes = async () => {
   }
 };
 
+const updateCommitAges = () => {
+  const now = Date.now();
+  document.querySelectorAll(`${TABLE_SELECTOR} relative-time[datetime]`).forEach(time => {
+    const age = now - Date.parse(time.getAttribute('datetime'));
+    time.classList.toggle(RECENT_CLASS, age >= 0 && age <= RECENT_MS);
+  });
+};
+
 let scheduled;
 const run = () => {
   clearTimeout(scheduled);
   scheduled = setTimeout(() => {
     updateAboutInfo();
     updateFileSizes();
+    updateCommitAges();
   }, 50);
 };
 
@@ -225,6 +255,7 @@ const run = () => {
 );
 
 const start = () => {
+  ensureStyles();
   new MutationObserver(run).observe(document.documentElement, { childList: true, subtree: true });
   run();
 };
